@@ -45,52 +45,64 @@ wsl -d ArchLinux
 ---
 
 ### **3. Базовая настройка Arch Linux**  
-#### **3.1 Включение Multilib репозитория**  
+#### **3.1 Включение Multilib репозитория и обновление системы**  
 ```bash
-# Раскомментировать Multilib репозиторий
-sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
+# Добавление multilib репозитория
+echo -e "\n[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
 
-# Обновление системы после включения репозитория
+# Удаление возможных дубликатов
+cat /etc/pacman.conf | uniq > /tmp/pacman.conf.new
+mv /tmp/pacman.conf.new /etc/pacman.conf
+
+# Обновление ключей и системы
+pacman -Sy --noconfirm archlinux-keyring
 pacman -Syu --noconfirm
 ```
 
 #### **3.2 Локализация и время**  
 ```bash
-# Раскомментируем русскую и английскую локали
-sed -i 's/#\(en_US\|ru_RU\)\.UTF-8 UTF-8/\1.UTF-8 UTF-8/g' /etc/locale.gen
+# Включение русской и английской локали
+sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+sed -i 's/#ru_RU.UTF-8 UTF-8/ru_RU.UTF-8 UTF-8/' /etc/locale.gen
 locale-gen
-echo "LANG=ru_RU.UTF-8" > /etc/locale.conf  # Системный язык — русский
 
-# Московское время
+# Установка русского языка
+echo "LANG=ru_RU.UTF-8" > /etc/locale.conf
+
+# Установка московского времени
 ln -sf /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 hwclock --systohc
 ```
 
 #### **3.3 Настройка WSL**  
-Создайте файл `/etc/wsl.conf`:  
 ```bash
-echo "
-[user]
-default=archlyze  # Пользователь по умолчанию
-
-[interop]
-enabled=true  # Взаимодействие с Windows
-appendWindowsPath=true
-" > /etc/wsl.conf
+# Создание файла настроек WSL
+echo "[user]" > /etc/wsl.conf
+echo "default=archlyze" >> /etc/wsl.conf
+echo "" >> /etc/wsl.conf
+echo "[interop]" >> /etc/wsl.conf
+echo "enabled=true" >> /etc/wsl.conf
+echo "appendWindowsPath=true" >> /etc/wsl.conf
 ```
 
 ---
 
 ### **4. Создание пользователя**  
 ```bash
-pacman -S --noconfirm zsh  # Устанавливаем zsh заранее
-useradd -m -G wheel -s /bin/zsh archlyze  # Только группа wheel
-passwd archlyze  # Установите пароль
+# Установка ZSH
+pacman -S --noconfirm zsh
 
-# Создание директории sudoers.d и настройка прав sudo для группы wheel
+# Создание пользователя archlyze
+useradd -m -G wheel -s /bin/zsh archlyze
+
+# Установка пароля для пользователя
+passwd archlyze
+
+# Настройка sudo без пароля
 mkdir -p /etc/sudoers.d
 echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/wheel
-chmod 440 /etc/sudoers.d/wheel  # Правильные права доступа для sudoers
+chmod 440 /etc/sudoers.d/wheel
+```
 ```
 
 ---
@@ -102,16 +114,17 @@ chmod 440 /etc/sudoers.d/wheel  # Правильные права доступа
 
 - **В Arch Linux**:  
   ```bash
+  # Установка утилит и драйверов NVIDIA
   pacman -S --noconfirm nvidia-utils lib32-nvidia-utils cuda
   ```  
 
 #### **5.2 Настройка графики (WSLg)**  
-В файл `%USERPROFILE%\.wslconfig` добавьте:  
+В файл `%USERPROFILE%\.wslconfig` на Windows добавьте:  
 ```ini
 [wsl2]
 guiApplications = true
 kernelCommandLine = cgroup_no_v1=all systemd.unified_cgroup_hierarchy=1
-memory=16GB  # Рекомендуется для RTX 4090
+memory=16GB
 ```
 
 ---
@@ -132,47 +145,61 @@ pacman -S --noconfirm \
 
 #### **6.2 ZSH + Oh My ZSH**  
 ```bash
-# Для root
+# Установка Oh My ZSH для root
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 
-# Для archlyze
+# Копирование Oh My ZSH для пользователя archlyze
 cp -r /root/.oh-my-zsh /home/archlyze/
 chown -R archlyze:archlyze /home/archlyze/.oh-my-zsh
-echo 'export ZSH="/home/archlyze/.oh-my-zsh"
-ZSH_THEME="robbyrussell"
-plugins=(git docker)
-source $ZSH/oh-my-zsh.sh' >> /home/archlyze/.zshrc
+
+# Создание конфигурации ZSH для пользователя
+echo 'export ZSH="/home/archlyze/.oh-my-zsh"' > /home/archlyze/.zshrc
+echo 'ZSH_THEME="robbyrussell"' >> /home/archlyze/.zshrc
+echo 'plugins=(git docker)' >> /home/archlyze/.zshrc
+echo 'source $ZSH/oh-my-zsh.sh' >> /home/archlyze/.zshrc
+chown archlyze:archlyze /home/archlyze/.zshrc
 ```
 
 #### **6.3 Paru (AUR-хелпер)**  
 ```bash
-pacman -S --needed base-devel git
-sudo -u archlyze git clone https://aur.archlinux.org/paru-bin.git /tmp/paru
-cd /tmp/paru
-sudo -u archlyze makepkg -si
+# Установка зависимостей
+pacman -S --needed --noconfirm base-devel git
 
-# Оптимизированный конфиг
-echo "
-[options]
-SkipReview
-BottomUp
-ProvidesLevel = 9999" > /etc/paru.conf
+# Клонирование репозитория paru
+sudo -u archlyze git clone https://aur.archlinux.org/paru-bin.git /tmp/paru
+
+# Установка paru
+cd /tmp/paru
+sudo -u archlyze makepkg -si --noconfirm
+
+# Создание оптимизированного конфига
+echo "[options]" > /etc/paru.conf
+echo "SkipReview" >> /etc/paru.conf
+echo "BottomUp" >> /etc/paru.conf
+echo "ProvidesLevel = 9999" >> /etc/paru.conf
 ```
 
 #### **6.4 Docker с поддержкой GPU**  
 ```bash
+# Установка Docker и NVIDIA Container Toolkit
 pacman -S --noconfirm docker docker-compose nvidia-container-toolkit
+
+# Включение сервиса Docker
 systemctl enable docker
+
+# Настройка Docker для работы с NVIDIA GPU
 mkdir -p /etc/docker
-echo '{
-  "runtimes": {
-    "nvidia": {
-      "path": "nvidia-container-runtime",
-      "runtimeArgs": []
-    }
-  },
-  "default-runtime": "nvidia"
-}' > /etc/docker/daemon.json
+echo '{' > /etc/docker/daemon.json
+echo '  "runtimes": {' >> /etc/docker/daemon.json
+echo '    "nvidia": {' >> /etc/docker/daemon.json
+echo '      "path": "nvidia-container-runtime",' >> /etc/docker/daemon.json
+echo '      "runtimeArgs": []' >> /etc/docker/daemon.json
+echo '    }' >> /etc/docker/daemon.json
+echo '  },' >> /etc/docker/daemon.json
+echo '  "default-runtime": "nvidia"' >> /etc/docker/daemon.json
+echo '}' >> /etc/docker/daemon.json
+
+# Перезапуск Docker
 systemctl restart docker
 ```
 
