@@ -103,7 +103,6 @@ mkdir -p /etc/sudoers.d
 echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/wheel
 chmod 440 /etc/sudoers.d/wheel
 ```
-```
 
 ---
 
