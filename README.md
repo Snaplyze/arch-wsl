@@ -45,7 +45,16 @@ wsl -d ArchLinux
 ---
 
 ### **3. Базовая настройка Arch Linux**  
-#### **3.1 Локализация и время**  
+#### **3.1 Включение Multilib репозитория**  
+```bash
+# Раскомментировать Multilib репозиторий
+sed -i '/\[multilib\]/,/Include/ s/^#//' /etc/pacman.conf
+
+# Обновление системы после включения репозитория
+pacman -Syu --noconfirm
+```
+
+#### **3.2 Локализация и время**  
 ```bash
 # Раскомментируем русскую и английскую локали
 sed -i 's/#\(en_US\|ru_RU\)\.UTF-8 UTF-8/\1.UTF-8 UTF-8/g' /etc/locale.gen
@@ -57,7 +66,7 @@ ln -sf /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 hwclock --systohc
 ```
 
-#### **3.2 Настройка WSL**  
+#### **3.3 Настройка WSL**  
 Создайте файл `/etc/wsl.conf`:  
 ```bash
 echo "
@@ -72,8 +81,18 @@ appendWindowsPath=true
 
 ---
 
-### **4. Установка драйверов и компонентов NVIDIA**  
-#### **4.1 Драйверы NVIDIA**  
+### **4. Создание пользователя**  
+```bash
+pacman -S --noconfirm zsh  # Устанавливаем zsh заранее
+useradd -m -G wheel -s /bin/zsh archlyze  # Только группа wheel
+passwd archlyze  # Установите пароль
+echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/wheel  # Отключение пароля для sudo
+```
+
+---
+
+### **5. Установка драйверов и компонентов NVIDIA**  
+#### **5.1 Драйверы NVIDIA**  
 - **На Windows**:  
   Установите последнюю версию драйвера для RTX 4090 с [официального сайта](https://www.nvidia.com/Download/index.aspx).  
 
@@ -82,22 +101,13 @@ appendWindowsPath=true
   pacman -S --noconfirm nvidia-utils lib32-nvidia-utils cuda
   ```  
 
-#### **4.2 Настройка графики (WSLg)**  
+#### **5.2 Настройка графики (WSLg)**  
 В файл `%USERPROFILE%\.wslconfig` добавьте:  
 ```ini
 [wsl2]
 guiApplications = true
 kernelCommandLine = cgroup_no_v1=all systemd.unified_cgroup_hierarchy=1
 memory=16GB  # Рекомендуется для RTX 4090
-```
-
----
-
-### **5. Создание пользователя**  
-```bash
-useradd -m -G wheel -s /bin/zsh archlyze  # Только группа wheel
-passwd archlyze  # Установите пароль
-echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/wheel  # Отключение пароля для sudo
 ```
 
 ---
@@ -118,9 +128,6 @@ pacman -S --noconfirm \
 
 #### **6.2 ZSH + Oh My ZSH**  
 ```bash
-# Установка ZSH
-pacman -S zsh
-
 # Для root
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 
@@ -210,6 +217,9 @@ wsl -d ArchLinux
 
 3. **WSLg**:  
    - Для GUI-приложений убедитесь, что в Windows установлен [драйвер WSLg](https://learn.microsoft.com/en-us/windows/wsl/wslg).  
+
+4. **Multilib**:  
+   - Репозиторий Multilib необходим для установки 32-битных библиотек, включая `lib32-nvidia-utils`.
 
 ---
 
