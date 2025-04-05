@@ -108,18 +108,20 @@ chmod 440 /etc/sudoers.d/wheel
 ---
 
 ### **5. Установка драйверов и компонентов NVIDIA**  
+
 #### **5.1 Драйверы NVIDIA**  
-- **На Windows**:  
-  Установите последнюю версию драйвера для RTX 4090 с [официального сайта](https://www.nvidia.com/Download/index.aspx).  
 
-- **В Arch Linux**:  
-  ```bash
-  # Установка утилит и драйверов NVIDIA
-  pacman -S --noconfirm nvidia-utils lib32-nvidia-utils cuda
-  ```  
+**Примечание**: На Windows установите последнюю версию драйвера для RTX 4090 с [официального сайта](https://www.nvidia.com/Download/index.aspx).
 
+```bash
+# Установка утилит и драйверов NVIDIA в Arch Linux
+pacman -S --noconfirm nvidia-utils lib32-nvidia-utils cuda
+```
+  
 #### **5.2 Настройка графики (WSLg)**  
-В файл `%USERPROFILE%\.wslconfig` на Windows добавьте:  
+
+**Примечание**: В файл `%USERPROFILE%\.wslconfig` на Windows добавьте:  
+
 ```ini
 [wsl2]
 guiApplications = true
