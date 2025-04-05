@@ -86,7 +86,11 @@ appendWindowsPath=true
 pacman -S --noconfirm zsh  # Устанавливаем zsh заранее
 useradd -m -G wheel -s /bin/zsh archlyze  # Только группа wheel
 passwd archlyze  # Установите пароль
-echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/wheel  # Отключение пароля для sudo
+
+# Создание директории sudoers.d и настройка прав sudo для группы wheel
+mkdir -p /etc/sudoers.d
+echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/wheel
+chmod 440 /etc/sudoers.d/wheel  # Правильные права доступа для sudoers
 ```
 
 ---
